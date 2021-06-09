@@ -36,7 +36,7 @@ namespace NhlScoreboard.Models
         public string abstractGameState { get; set; }
         public string codedGameState { get; set; }
         public string detailedState { get; set; }
-        public string statusCode { get; set; }
+        public int statusCode { get; set; }
         public bool startTimeTBD { get; set; }
     }
 
