@@ -4,14 +4,14 @@
 @inject HttpClient Http
 
 <div class="d-flex flex-column align-items-center">
-    <h1 class="title-score-info">@(CurrentScore.gameData.datetime.dateTime.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
-    @if (@CurrentScore.gameData.status.statusCode == "3")
+    <h1 class="title-score-info">@(CurrentScore?.gameData.datetime.dateTime.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
+    @if (@CurrentScore?.gameData.status.statusCode == "3")
     {
-        <h3>@CurrentScore.gameData.datetime.dateTime.ToLocalTime().ToString("HH:mm")</h3>
+        <h3>@CurrentScore?.gameData.datetime.dateTime.ToLocalTime().ToString("HH:mm")</h3>
     }
     else
     {
-        <h3>@CurrentScore.gameData.status.detailedState</h3>
+        <h3>@CurrentScore?.gameData.status.detailedState</h3>
     }
 </div>
 
@@ -19,8 +19,18 @@
     <TeamInfo Team="@CurrentScore?.gameData.teams.home"
               LeagueRecord="@CurrentScheduledGame?.teams.home.leagueRecord">
     </TeamInfo>
-    <span class="middle-score-info">VS</span>
-    
+    @if (@CurrentScore?.gameData.status.statusCode == "3")
+    {
+        <span class="middle-score-info">VS</span>
+    }
+    else
+    {
+        <span class="middle-score-info">
+            @CurrentScore?.liveData.linescore.teams.home.goals -
+            @CurrentScore?.liveData.linescore.teams.away.goals
+        </span>
+    }
+
     <TeamInfo Team="@CurrentScore?.gameData.teams.away"
               LeagueRecord="@CurrentScheduledGame?.teams.away.leagueRecord">
     </TeamInfo>
@@ -47,9 +57,9 @@
             {
                 CurrentScore = Scores[scoreIndex];
                 CurrentScheduledGame = ScheduledGames.FirstOrDefault(f => f.gamePk == CurrentScore.gamePk);
-                scoreIndex += 1;
-                if (scoreIndex == ScheduledGames.Count)
-                    scoreIndex = 0;
+    // scoreIndex += 1;
+    // if (scoreIndex == ScheduledGames.Count)
+    //     scoreIndex = 0;
                 StateHasChanged();
             }, null, 0, 5000);
         });
