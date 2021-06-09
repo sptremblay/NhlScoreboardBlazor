@@ -1,0 +1,18 @@
+﻿@using NhlScoreboard.Models
+
+
+<div class="d-flex flex-column align-content-center">
+    <span class="team-logo logo-bg-dark--team-@Team?.id"></span>
+    <h4>@Team?.name</h4>
+    <span>(@LeagueRecord?.wins - @LeagueRecord?.losses)</span>
+</div>
+
+@code {
+
+    [Parameter]
+    public LeagueRecord LeagueRecord { get; set; }
+
+    [Parameter]
+    public Team Team { get; set; }
+
+}

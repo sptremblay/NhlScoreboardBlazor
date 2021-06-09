@@ -1,0 +1,153 @@
+﻿@page "/counter"
+@using System.Net
+@inject HttpClient Http
+
+<h1>Counter</h1>
+
+<p>@CurrentGame?.teams.home.team.name</p>
+
+<div class="team-logo logo-bg-dark--team-@CurrentGame?.teams.home.team.id"></div>
+@Time
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me13</button>
+
+@code {
+    private int currentCount = 0;
+    private string Time { get; set; }
+    private List<Game> TodaySchedule { get; set; }
+    private int scheduleIndex = 0;
+    private Game CurrentGame { get; set; }
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        InvokeAsync(async () =>
+        {
+            TodaySchedule = await LoadSchedule();
+            var timer = new System.Threading.Timer((_) =>
+            {
+                CurrentGame = TodaySchedule[scheduleIndex];
+                scheduleIndex += 1;
+                if (scheduleIndex == TodaySchedule.Count)
+                    scheduleIndex = 0;
+                StateHasChanged();
+            }, null, 0, 5000);
+        });
+    }
+    
+    private async Task<List<Game>> LoadSchedule()
+    {
+        var today = DateTime.Now.ToString("yyyy-M-d");
+        var response = await Http.GetFromJsonAsync<ScheduleResponse>
+            ($"https://statsapi.web.nhl.com/api/v1/schedule?&startDate={today}&endDate={today}");
+        return response?.dates[0].games;
+    }
+    
+    
+    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
+    public class MetaData
+    {
+        public string timeStamp { get; set; }
+    }
+
+    public class Status
+    {
+        public string abstractGameState { get; set; }
+        public string codedGameState { get; set; }
+        public string detailedState { get; set; }
+        public string statusCode { get; set; }
+        public bool startTimeTBD { get; set; }
+    }
+
+    public class LeagueRecord
+    {
+        public int wins { get; set; }
+        public int losses { get; set; }
+        public string type { get; set; }
+    }
+
+    public class Team
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+        public string link { get; set; }
+    }
+
+    public class Away
+    {
+        public LeagueRecord leagueRecord { get; set; }
+        public int score { get; set; }
+        public Team team { get; set; }
+    }
+
+    public class Home
+    {
+        public LeagueRecord leagueRecord { get; set; }
+        public int score { get; set; }
+        public Team team { get; set; }
+    }
+
+    public class Teams
+    {
+        public Away away { get; set; }
+        public Home home { get; set; }
+    }
+
+    public class Venue
+    {
+        public string name { get; set; }
+        public string link { get; set; }
+        public int? id { get; set; }
+    }
+
+    public class Content
+    {
+        public string link { get; set; }
+    }
+
+    public class Game
+    {
+        public int gamePk { get; set; }
+        public string link { get; set; }
+        public string gameType { get; set; }
+        public string season { get; set; }
+        public DateTime gameDate { get; set; }
+        public Status status { get; set; }
+        public Teams teams { get; set; }
+        public Venue venue { get; set; }
+        public Content content { get; set; }
+    }
+
+    public class Date
+    {
+        public string date { get; set; }
+        public int totalItems { get; set; }
+        public int totalEvents { get; set; }
+        public int totalGames { get; set; }
+        public int totalMatches { get; set; }
+        public List<Game> games { get; set; }
+        public List<object> events { get; set; }
+        public List<object> matches { get; set; }
+    }
+
+    public class ScheduleResponse
+    {
+        public string copyright { get; set; }
+        public int totalItems { get; set; }
+        public int totalEvents { get; set; }
+        public int totalGames { get; set; }
+        public int totalMatches { get; set; }
+        public MetaData metaData { get; set; }
+        public int wait { get; set; }
+        public List<Date> dates { get; set; }
+    }
+
+
+
+}
