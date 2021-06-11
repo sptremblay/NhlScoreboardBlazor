@@ -1,21 +1,19 @@
 ﻿@using NhlScoreboard.Models
 <div class="d-flex flex-column align-items-center">
-    <h1 class="title-score-info">@(CurrentScore?.gameData.datetime.dateTime.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
-    <h3>@CurrentScore?.gameData.datetime.dateTime.ToLocalTime().ToString("HH:mm")</h3>
+    <h1 class="title-score-info">@(CurrentScheduledGame.gameDate.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
+    <h3>@CurrentScheduledGame.gameDate.ToLocalTime().ToString("HH:mm")</h3>
 </div>
 
 <div class="d-flex flex-row justify-content-around align-items-center">
-    <TeamInfo Team="@CurrentScore?.gameData.teams.home"
+    <TeamInfo Team="@CurrentScheduledGame.teams.home.team"
               LeagueRecord="@CurrentScheduledGame?.teams.home.leagueRecord">
     </TeamInfo>
     <span class="middle-score-info">VS</span>
-    <TeamInfo Team="@CurrentScore?.gameData.teams.away"
+    <TeamInfo Team="@CurrentScheduledGame.teams.away.team"
               LeagueRecord="@CurrentScheduledGame?.teams.away.leagueRecord">
     </TeamInfo>
 </div>
 @code {
-    [Parameter]
-    public GameFeedLiveResponse CurrentScore { get; set; }
     [Parameter]
     public Game CurrentScheduledGame { get; set; }
 }

@@ -1,20 +1,27 @@
 ﻿@page "/"
 @using NhlScoreboard.Components
 @using NhlScoreboard.Models
+@using System.ComponentModel
 @inject HttpClient Http
 
-@if (CurrentScore?.gameData.status.statusCode < 3)
+@if (scoreIndex == -1)
 {
-    <ScheduledGameInfo CurrentScore="@CurrentScore" CurrentScheduledGame="@CurrentScheduledGame"/>
+    <Clock />
 }
 else
 {
-    <LiveGameInfo CurrentScore="@CurrentScore" CurrentScheduledGame="@CurrentScheduledGame"/>
+    if (CurrentScore?.gameData.status.statusCode < 3)
+    {
+        <ScheduledGameInfo CurrentScheduledGame="@CurrentScheduledGame"/>
+    }
+    else
+    {
+        <LiveGameInfo CurrentScore="@CurrentScore" CurrentScheduledGame="@CurrentScheduledGame"/>
+    }
 }
 
 @code {
     private List<Game> ScheduledGames { get; set; }
-    private List<GameFeedLiveResponse> Scores { get; set; }
     private int scoreIndex = 0;
     private GameFeedLiveResponse CurrentScore { get; set; }
     private Game CurrentScheduledGame { get; set; }
@@ -27,15 +34,31 @@ else
         InvokeAsync(async () =>
         {
             ScheduledGames = await LoadSchedule();
-            Scores = await RefreshScores();
+            var refreshSchedule = new System.Threading.Timer((_) =>
+            {
+                InvokeAsync(async () =>
+                {
+                    await LoadSchedule();
+                });
+            }, null, 0, 300000);
 
             var refreshScreenTimer = new System.Threading.Timer((_) =>
             {
-                CurrentScore = Scores[scoreIndex];
-                CurrentScheduledGame = ScheduledGames.FirstOrDefault(f => f.gamePk == CurrentScore.gamePk);
+                if (scoreIndex >= 0)
+                {
+                    CurrentScheduledGame = ScheduledGames[scoreIndex];
+                    if (CurrentScheduledGame.status.statusCode == 3)
+                    {
+                        InvokeAsync(async () =>
+                        {
+                            CurrentScore = await Http.GetFromJsonAsync<GameFeedLiveResponse>
+                                ($"https://statsapi.web.nhl.com/api/v1/game/{CurrentScheduledGame.gamePk}/feed/live");
+                        });
+                    }
+                }
                 scoreIndex += 1;
                 if (scoreIndex == ScheduledGames.Count)
-                    scoreIndex = 0;
+                    scoreIndex = -1;
                 StateHasChanged();
             }, null, 0, 5000);
         });
@@ -54,14 +77,4 @@ else
         return response?.dates[0].games;
     }
 
-    private async Task<List<GameFeedLiveResponse>> RefreshScores()
-    {
-        var gameFeeds = new List<GameFeedLiveResponse>();
-        foreach (var game in ScheduledGames)
-        {
-            gameFeeds.Add(await Http.GetFromJsonAsync<GameFeedLiveResponse>
-                ($"https://statsapi.web.nhl.com/api/v1/game/{game.gamePk}/feed/live"));
-        }
-        return gameFeeds;
-    }
 }
