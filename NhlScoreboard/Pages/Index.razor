@@ -36,31 +36,31 @@ else
     {
         base.OnInitialized();
 
-        InvokeAsync(async () =>
+        
+        var refreshSchedule = new System.Threading.Timer((_) =>
         {
-            ScheduledGames = await LoadSchedule();
-            Scores = await RefreshScores();
-            
-            var refreshSchedule = new System.Threading.Timer((_) =>
+            InvokeAsync(async () =>
             {
-                InvokeAsync(async () =>
-                {
-                    ScheduledGames = await LoadSchedule();
-                });
-            }, null, 0, 300000);
+                ScheduledGames = await LoadSchedule();
+                Scores = await RefreshScores();
+            });
+        }, null, 0, 300000);
 
-            var refreshScreenTimer = new System.Threading.Timer((_) =>
+        var refreshScreenTimer = new System.Threading.Timer((_) =>
+        {
+            InvokeAsync( async ()  =>
             {
+                if (ScheduledGames == null ||
+                    ScheduledGames.Count == 0) 
+                    return;
+                
                 if (scoreIndex >= 0)
                 {
                     CurrentScheduledGame = ScheduledGames[scoreIndex];
                     if (CurrentScheduledGame.status.statusCode == 3)
                     {
-                        InvokeAsync(async () =>
-                        {
-                            CurrentScore = await Http.GetFromJsonAsync<GameFeedLiveResponse>
-                                ($"https://statsapi.web.nhl.com/api/v1/game/{CurrentScheduledGame.gamePk}/feed/live");
-                        });
+                        CurrentScore = await Http.GetFromJsonAsync<GameFeedLiveResponse>
+                            ($"https://statsapi.web.nhl.com/api/v1/game/{CurrentScheduledGame.gamePk}/feed/live");
                     }
                     else
                     {
@@ -68,11 +68,14 @@ else
                     }
                 }
                 scoreIndex += 1;
-                if (scoreIndex == ScheduledGames.Count)
+                if (ScheduledGames != null && scoreIndex == ScheduledGames.Count)
                     scoreIndex = -1;
                 StateHasChanged();
-            }, null, 0, 7000);
-        });
+            });
+        }, null, 500, 7000);
+
+        
+        
     }
 
     private async Task<List<Game>> LoadSchedule()
@@ -99,5 +102,6 @@ else
         }
         return gameFeeds;
     }
+
 
 }
