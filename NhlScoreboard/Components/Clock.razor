@@ -1,10 +1,35 @@
-﻿<div class="d-flex align-items-center justify-content-center h-100">
+﻿@using System.Threading
+@using NhlScoreboard.Models
+@implements IDisposable
+
+<div class="d-flex align-items-center justify-content-center h-100">
     <div class="d-flex flex-column">
-        <h1 class="title-score-info">@DateTime.Now.ToLocalTime().ToString("HH:mm")</h1>
-        <h3>@DateTime.Now.ToString("yyyy MMMM dd")</h3>
+        <h1 class="title-score-info">@currentTime.ToString("HH:mm:ss")</h1>
+        <h3>@currentTime.ToString("yyyy MMMM dd")</h3>
     </div>
 </div>
 
 @code {
+
+    DateTime currentTime;
+    Timer refreshScreenTimer;
+    private int Count = 5;
+    
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+        refreshScreenTimer = new Timer(new TimerCallback(_ =>
+        {
+            currentTime = DateTime.Now;
+            
+            this.StateHasChanged();
+        }), null, 1000, 1000);
+    }
+
+    public void Dispose()
+    {
+        refreshScreenTimer.Dispose();
+    }
 
 }

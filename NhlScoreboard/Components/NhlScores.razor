@@ -1,0 +1,71 @@
+﻿@using NhlScoreboard.Models
+@using System.Threading
+@implements IDisposable
+@inject HttpClient _httpClient
+
+@if (CurrentScheduledGame?.status.statusCode < 3)
+ {
+     <ScheduledGameInfo CurrentScheduledGame="@CurrentScheduledGame"/>
+ }
+ else if (CurrentScheduledGame?.status.statusCode == 3)
+ {
+     <LiveGameInfo currentScheduledGame="@CurrentScheduledGame"/>
+ }
+ else
+ {
+     <ResultGameInfo CurrentScheduledGame="@CurrentScheduledGame"/>
+ }
+
+@code {
+    private Game CurrentScheduledGame { get; set; }
+    private int CurrentScheduleGameIndex { get; set; } = -1;
+    
+    private List<Game> scheduledGames { get; set; }
+    private TimeSpan dayChangeTime = new TimeSpan(11, 50, 00);
+
+    private Timer carousselScoresTimer;
+
+    
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        InvokeAsync(async () =>
+        {
+            scheduledGames = await LoadSchedule();
+            
+            carousselScoresTimer = new Timer(new TimerCallback(_ =>
+            {
+                if (CurrentScheduleGameIndex < scheduledGames.Count-1)
+                    CurrentScheduleGameIndex += 1;
+                else
+                    CurrentScheduleGameIndex = 0;
+                
+                CurrentScheduledGame = scheduledGames[CurrentScheduleGameIndex];
+                
+                StateHasChanged();
+            }), null, 1000, 5000);
+        });
+    }
+
+    public void Dispose()
+    {
+        carousselScoresTimer.Dispose();
+    }
+    
+    private async Task<List<Game>> LoadSchedule()
+    {
+        var date = DateTime.Now.ToString("yyyy-M-d");
+
+        if (DateTime.Now.TimeOfDay < dayChangeTime) //... load previous day
+        {
+            date = DateTime.Now.Subtract(new TimeSpan(1, 0, 0, 0)).ToString("yyyy-M-d");
+        }
+        var response = await _httpClient.GetFromJsonAsync<ScheduleResponse>
+            ($"https://statsapi.web.nhl.com/api/v1/schedule?&startDate={date}&endDate={date}");
+
+        return response?.dates[0].games;
+    }
+
+}

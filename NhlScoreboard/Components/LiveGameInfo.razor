@@ -1,39 +1,54 @@
 ﻿@using NhlScoreboard.Models
+@inject HttpClient _httpClient;
+
 <div class="d-flex flex-column align-items-center">
-    <h1 class="title-score-info">@(CurrentScore?.gameData.datetime.dateTime.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
-    <h3>@CurrentScore?.gameData.status.detailedState</h3>
+    <h1 class="title-score-info">@(currentScore?.gameData.datetime.dateTime.ToLocalTime().Day == DateTime.Now.Day ? "TODAY" : "YESTERDAY")</h1>
+    <h3>@currentScore?.gameData.status.detailedState</h3>
 </div>
 
 <div class="d-flex flex-row justify-content-around align-items-center">
-    <TeamInfo Team="@CurrentScore?.gameData.teams.home"
-              LeagueRecord="@CurrentScheduledGame?.teams.home.leagueRecord">
+    <TeamInfo Team="@currentScore?.gameData.teams.home"
+              LeagueRecord="@currentScheduledGame?.teams.home.leagueRecord">
     </TeamInfo>
 
     <div class="d-flex flex-column align-items-center">
         <span class="middle-score-info">
-            @CurrentScore?.liveData.linescore.teams.home.goals -
-            @CurrentScore?.liveData.linescore.teams.away.goals
+            @currentScore?.liveData.linescore.teams.home.goals -
+            @currentScore?.liveData.linescore.teams.away.goals
         </span>
         <span>
             Shots on goal
         </span>
         <span>
-            @CurrentScore?.liveData.linescore.teams.home.shotsOnGoal -
-                        @CurrentScore?.liveData.linescore.teams.away.shotsOnGoal
+            @currentScore?.liveData.linescore.teams.home.shotsOnGoal -
+                        @currentScore?.liveData.linescore.teams.away.shotsOnGoal
         </span>
     </div>
 
-    <TeamInfo Team="@CurrentScore?.gameData.teams.away"
-              LeagueRecord="@CurrentScheduledGame?.teams.away.leagueRecord">
+    <TeamInfo Team="@currentScore?.gameData.teams.away"
+              LeagueRecord="@currentScheduledGame?.teams.away.leagueRecord">
     </TeamInfo>
 </div>
 
 @code {
 
-    [Parameter]
-    public GameFeedLiveResponse CurrentScore { get; set; }
+    private GameFeedLiveResponse currentScore { get; set; }
 
+    private Game _currentScheduleGame;
     [Parameter]
-    public Game CurrentScheduledGame { get; set; }
+    public Game currentScheduledGame
+    {
+        get => _currentScheduleGame;
+        set
+        {
+            _currentScheduleGame = value;
+            LoadScore();
+        } 
+    }
 
+    private async void LoadScore()
+    {
+        currentScore = await _httpClient.GetFromJsonAsync<GameFeedLiveResponse>
+            ($"https://statsapi.web.nhl.com/api/v1/game/{_currentScheduleGame.gamePk}/feed/live");
+    }
 }
